@@ -18,7 +18,26 @@ export class App {
       //それぞれのTodoアイテム要素をtodoListElement以下へ追加する
       const todoItems = this.todoListModel.getTodoItems();
       todoItems.forEach(item => {
-        const todoItemElement = element`<li>${item.title}</li>`;
+        const todoItemElement = item.completed
+          ? element`<li><input type="checkbox" checked/><s>${
+              item.title
+            }</s><button>X</button></li>`
+          : element`<li><input type="checkbox" />${
+              item.title
+            }<button>X</button></li>`;
+        const inputCheckboxElement = todoItemElement.querySelector(
+          'input[type="checkbox"]'
+        );
+        inputCheckboxElement.addEventListener("change", () => {
+          this.todoListModel.updateTodo({
+            id: item.id,
+            completed: !item.completed
+          });
+        });
+        const deleteButtonElement = todoItemElement.querySelector("button");
+        deleteButtonElement.addEventListener("click", () => {
+          this.todoListModel.deleteTodo({ id: item.id });
+        });
         todoListElement.appendChild(todoItemElement);
       });
       //containerElementの中身をtodoListElementで置き換える
