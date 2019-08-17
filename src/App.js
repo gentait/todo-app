@@ -1,10 +1,12 @@
 import { TodoListModel } from "./model/TodoListModel.js";
 import { TodoItemModel } from "./model/TodoItemModel.js";
-import { element, render } from "./html-util.js";
+import { render } from "./html-util.js";
+import { TodoListView } from "./view/TodoListView.js";
 
 export class App {
   constructor() {
     //TodoListの初期化
+    this.todoListView = new TodoListView();
     this.todoListModel = new TodoListModel();
   }
   mount() {
@@ -12,34 +14,15 @@ export class App {
     const inputElement = document.querySelector("#js-form-input");
     const containerElement = document.querySelector("#js-todo-list");
     const todoItemCounterElement = document.querySelector("#js-todo-count");
+    const todoListView = new TodoListView();
     this.todoListModel.onChange(() => {
-      //Todoリストをまとめる要素
-      const todoListElement = element`<ul/>`;
-      //それぞれのTodoアイテム要素をtodoListElement以下へ追加する
-      const todoItems = this.todoListModel.getTodoItems();
-      todoItems.forEach(item => {
-        const todoItemElement = item.completed
-          ? element`<li><input type="checkbox" checked/><s>${
-              item.title
-            }</s><button>X</button></li>`
-          : element`<li><input type="checkbox" />${
-              item.title
-            }<button>X</button></li>`;
-        const inputCheckboxElement = todoItemElement.querySelector(
-          'input[type="checkbox"]'
-        );
-        inputCheckboxElement.addEventListener("change", () => {
-          this.todoListModel.updateTodo({
-            id: item.id,
-            completed: !item.completed
-          });
-        });
-        const deleteButtonElement = todoItemElement.querySelector("button");
-        deleteButtonElement.addEventListener("click", () => {
-          this.todoListModel.deleteTodo({ id: item.id });
-        });
-        todoListElement.appendChild(todoItemElement);
-      });
+      const todoListElement = todoListView.createElement(
+        this.todoListModel.getTodoItems(),
+        {
+          onUpdateTodo: this.todoListModel.updateTodo.bind(this.todoListModel),
+          onDeleteTodo: this.todoListModel.deleteTodo.bind(this.todoListModel)
+        }
+      );
       //containerElementの中身をtodoListElementで置き換える
       render(todoListElement, containerElement);
       //アイテム数の表示を更新
@@ -48,13 +31,18 @@ export class App {
     //formを送信したら新しいTodoitemModelを追加する
     formElement.addEventListener("submit", event => {
       event.preventDefault();
-      this.todoListModel.addTodo(
-        new TodoItemModel({
-          title: inputElement.value,
-          completed: false
-        })
-      );
-      inputElement.value = "";
+      if (inputElement.value) {
+        this.todoListModel.addTodo(
+          new TodoItemModel({
+            title: inputElement.value,
+            completed: false
+          })
+        );
+        inputElement.value = "";
+      }
     });
+  }
+  unmount() {
+    this.todoListModel._listeners = new Map();
   }
 }
